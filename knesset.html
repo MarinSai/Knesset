@@ -77,6 +77,7 @@ button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4.3.9/js/iframeResizer.contentWindow.js"></script>
 <script>
 // Ordre gauche → droite de l'hémicycle
 const BLOCS = [
@@ -182,9 +183,21 @@ function render(){
     .style("background", p => p.color).style("width", p => (n ? p.seats / n * 100 : 0) + "%");
 }
 render();
-// Hauteur envoyée à la page parente (iframe auto-ajustée)
-const sendH = () => parent !== window && parent.postMessage({type:"gc-embed-height", id:"knesset-2026", height:document.documentElement.scrollHeight}, "*");
-new ResizeObserver(sendH).observe(document.body); addEventListener("load", sendH);
+// Hauteur envoyée à la page parente, dans les formats les plus courants
+// (Datawrapper, iframe générique), pour l'option « Auto-resize » du bloc iFrame
+const sendH = () => {
+  if (parent === window) return;
+  const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+  const msgs = [
+    {"datawrapper-height": {"knesset.html": height}},
+    {type:"gc-embed-height", id:"knesset-2026", height},
+    {type:"resize", height}, {height}, {frameHeight: height}
+  ];
+  msgs.forEach(m => parent.postMessage(m, "*"));
+  parent.postMessage(JSON.stringify({height}), "*");
+};
+new ResizeObserver(sendH).observe(document.documentElement);
+addEventListener("load", sendH); setTimeout(sendH, 500); setTimeout(sendH, 1500);
 </script>
 
 </body>
